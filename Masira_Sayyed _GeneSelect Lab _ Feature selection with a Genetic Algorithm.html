@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GeneSelect Lab – Feature selection with a Genetic Algorithm</title>
+<style>
+:root{--bg:#F6F3FF;--card:#fff;--ink:#1D1545;--mut:#6A6290;--line:#E2DCF5;--teal:#10B5A0;--amber:#F5A524;--rose:#E8478B;--vio:#6D4AFF;--off:#ECE8FA;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#150F33;--card:#211A4A;--ink:#F1EEFF;--mut:#A9A1D6;--line:#3A3170;--off:#2E2661}}
+:root[data-theme="dark"]{--bg:#150F33;--card:#211A4A;--ink:#F1EEFF;--mut:#A9A1D6;--line:#3A3170;--off:#2E2661}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;color:#fff;background:#241463 linear-gradient(160deg,#1E1259 0%,#4B2096 48%,#B1337F 100%) fixed;font:15px/1.5 "Avenir Next","Segoe UI",system-ui,sans-serif}
+#dna{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.page{position:relative;z-index:1}
+.wrap{max-width:1080px;margin:0 auto}
+a{color:inherit}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 0;font-weight:700}
+.nav span a{margin-left:18px;font-weight:500;text-decoration:none;opacity:.9}
+.hero{padding:7vh 16px 6vh}
+h1{margin:0 0 14px;font-size:clamp(32px,6.4vw,58px);line-height:1.08;letter-spacing:-1px;max-width:15ch}
+.lead{font-size:clamp(16px,2.4vw,19px);max-width:52ch;margin:0 0 22px;opacity:.95}
+.big{padding:13px 26px;font-size:17px;border-radius:14px;background:linear-gradient(90deg,#10B5A0,#6D4AFF);border:0}
+.ghost{display:inline-block;padding:12px 18px;border-radius:14px;border:1px solid rgba(255,255,255,.5);text-decoration:none}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:34px;max-width:760px}
+.facts div{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:14px;padding:12px 14px;backdrop-filter:blur(4px)}
+.facts b{display:block;font-size:26px}.facts span{font-size:13px;opacity:.9}
+.sec{margin:0 0 14px;font-size:24px}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:34px}
+.step{background:rgba(255,255,255,.94);color:#1D1545;border-radius:14px;padding:14px;border-top:6px solid var(--c)}
+.step b{display:block;margin-bottom:4px;font-size:16px}.step p{margin:0;font-size:14px}
+@media(max-width:820px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}.facts{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px}
+.chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);border-radius:12px;padding:8px 14px;min-width:120px}
+.chip b{display:block;font-size:22px;line-height:1.2}.chip span{font-size:12px;opacity:.9}
+main{padding:8px 16px 40px}.msg{color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{color:var(--ink);backdrop-filter:blur(6px);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h2{margin:0 0 10px;font-size:17px}
+.sub{color:var(--mut);font-size:13px;margin:-6px 0 10px}
+.ctl{display:grid;grid-template-columns:130px 1fr 46px;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.ctl output{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+input[type=range]{width:100%;accent-color:var(--vio)}
+input[type=number]{width:100%;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--off);color:var(--ink);padding:8px 14px}
+button.go{background:var(--vio);border-color:var(--vio);color:#fff;font-weight:600}
+button:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;margin:6px 0}
+.dot{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:5px;vertical-align:-1px}
+canvas{width:100%;display:block;border-radius:10px}
+.genes{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;margin:8px 0}
+.gene{padding:8px 0;text-align:center;font-size:12px;font-weight:700;border-radius:8px;border:2px solid transparent;background:var(--off);color:var(--mut)}
+.gene.on{color:#fff}
+.gene.t{cursor:pointer}
+.bar{height:22px;border-radius:7px;background:var(--off);margin:4px 0 10px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:7px;transition:width .4s}
+.row{display:flex;justify-content:space-between;font-size:14px}
+.note{font-size:13px;color:var(--mut)}
+.msg{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--off);font-size:14px}
+@media(prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style></head>
+<body>
+<canvas id="dna" aria-hidden="true"></canvas>
+<div class="page">
+<nav class="nav wrap"><span style="margin:0">🧬 GeneSelect Lab</span><span><a href="#how">How it works</a><a href="#lab">Lab</a></span></nav>
+<section class="hero wrap">
+<h1>Let evolution pick the features that matter.</h1>
+<p class="lead">A genetic algorithm breeds, mixes and mutates feature subsets until a small set remains that a classifier can still rely on. Play with it live.</p>
+<div class="btns"><button class="go big" id="go">Launch the lab</button><a class="ghost" href="#how">See how it works</a></div>
+<div class="facts"><div><b>4,096</b><span>possible subsets of 12 features; the GA tests only a small fraction</span></div><div><b>5-NN</b><span>classifier whose accuracy scores every candidate</span></div><div><b>40</b><span>held-out samples the search never sees</span></div></div>
+</section>
+<section id="how" class="wrap" style="padding:0 16px"><h2 class="sec">How the algorithm works</h2>
+<div class="steps">
+<div class="step" style="--c:#10B5A0"><b>1. Encode</b><p>Each feature subset becomes a chromosome: 12 bits, 1 = keep the feature.</p></div>
+<div class="step" style="--c:#6D4AFF"><b>2. Evaluate</b><p>A 5-NN classifier scores each subset; bigger subsets pay a penalty λ.</p></div>
+<div class="step" style="--c:#F5A524"><b>3. Evolve</b><p>Tournament selection, crossover and mutation create the next generation.</p></div>
+<div class="step" style="--c:#E8478B"><b>4. Optimize</b><p>Repeat until the last generation, then report the best feature mask.</p></div>
+</div></section>
+<main><div class="wrap" id="lab"><h2 class="sec">The lab</h2>
+<div class="chips" aria-live="polite">
+<div class="chip"><b id="sGen">0 / 30</b><span>generation</span></div>
+<div class="chip"><b id="sFit">–</b><span>best fitness</span></div>
+<div class="chip"><b id="sK">– / 12</b><span>features kept</span></div>
+<div class="chip"><b id="sEv">0</b><span>models evaluated</span></div>
+</div>
+<div class="grid">
+<section class="card"><h2>Evolution controls</h2>
+<p class="sub">Fitness = leave-one-out accuracy of a 5-nearest-neighbour classifier − λ × (features kept ÷ 12).</p>
+<label class="ctl">Population<input type="range" id="pop" min="10" max="60" value="30"><output></output></label>
+<label class="ctl">Generations<input type="range" id="gens" min="5" max="60" value="30"><output></output></label>
+<label class="ctl">Crossover rate<input type="range" id="cx" min="0.1" max="1" step="0.05" value="0.8"><output></output></label>
+<label class="ctl">Mutation rate<input type="range" id="mu" min="0.005" max="0.15" step="0.005" value="0.04"><output></output></label>
+<label class="ctl">Size penalty λ<input type="range" id="lam" min="0" max="0.3" step="0.01" value="0.05"><output></output></label>
+<label class="ctl">Step delay (ms)<input type="range" id="spd" min="30" max="500" step="10" value="110"><output></output></label>
+<label class="ctl">Random seed<input type="number" id="seed" value="42" min="1"><span></span></label>
+<div class="btns"><button class="go" id="run">Run</button><button id="step">Step</button><button id="reset">Reset</button><button id="rnd">New dataset</button></div>
+<div class="msg" id="status">Set the controls, then press Run.</div>
+</section>
+<section class="card"><h2>Population heatmap</h2>
+<p class="sub">Each row is one chromosome (best on top). Click a row to load it into “Try your own subset”.</p>
+<div class="legend"><span><i class="dot" style="background:var(--teal)"></i>informative</span><span><i class="dot" style="background:var(--amber)"></i>redundant copy</span><span><i class="dot" style="background:var(--rose)"></i>noise</span></div>
+<canvas id="heat" height="300" aria-label="Population heatmap"></canvas>
+<label class="ctl" style="grid-template-columns:90px 1fr 60px">Replay<input type="range" id="scrub" min="1" max="1" value="1" disabled><output id="scrubO"></output></label>
+</section>
+</div>
+<div class="grid">
+<section class="card"><h2>Convergence</h2>
+<p class="sub">Best and average fitness of each generation.</p>
+<canvas id="chart" height="240" aria-label="Fitness by generation"></canvas>
+<div class="legend"><span><i class="dot" style="background:var(--rose)"></i>best</span><span><i class="dot" style="background:var(--vio)"></i>population average</span></div>
+</section>
+<section class="card"><h2>Best chromosome</h2>
+<p class="sub">Selected genes of the generation shown in the replay.</p>
+<div class="genes" id="bestGenes"></div>
+<div class="msg" id="insight">Run the algorithm to see which features survive.</div>
+<h2 style="margin-top:18px">Try your own subset</h2>
+<p class="sub">Click genes to switch features on or off and compare with the GA.</p>
+<div class="genes" id="myGenes"></div>
+<div class="row"><span>Validation accuracy (leave-one-out)</span><b id="myVal">–</b></div>
+<div class="row"><span>Held-out test accuracy</span><b id="myTest">–</b></div>
+<div class="row"><span>Fitness</span><b id="myFit">–</b></div>
+<div class="btns"><button id="myAll">All features</button><button id="myNone">Clear</button><button id="myBest">Load GA best</button></div>
+</section>
+</div>
+<section class="card"><h2>All features vs GA subset</h2>
+<p class="sub">Accuracy on 40 held-out samples that the search never saw.</p>
+<div class="row"><span>Baseline: all 12 features</span><b id="bA">–</b></div><div class="bar"><i id="bAb" style="background:var(--vio);width:0"></i></div>
+<div class="row"><span id="gLbl">GA-selected subset</span><b id="gA">–</b></div><div class="bar"><i id="gAb" style="background:var(--teal);width:0"></i></div>
+<div class="row"><span>Feature reduction</span><b id="red">–</b></div><div class="bar"><i id="redb" style="background:var(--amber);width:0"></i></div>
+<p class="note">Synthetic demonstration data: 160 samples, 12 features (4 informative, 3 noisy copies of informative ones, 5 pure noise), two balanced classes. It illustrates the method and is not a result of the project report.</p>
+</section>
+</div></main></div>
+<script>
+const $=s=>document.querySelector(s),N=12,M=160,NTR=120,NTE=40;
+const TY=['i','i','i','i','r','r','r','n','n','n','n','n'],VAR={i:'--teal',r:'--amber',n:'--rose'};
+const cv=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const gauss=r=>Math.sqrt(-2*Math.log(r()+1e-12))*Math.cos(2*Math.PI*r());
+let D,DT,ytr,yte,base,cache=new Map(),G=null,view=0,timer=null,mine=Array(N).fill(1),hist=[];
+function makeData(seed){
+ const r=rng(seed),sh=[1.1,.9,.75,.6],y=[],X=[];
+ for(let i=0;i<M;i++){const c=i%2,s=c?1:-1,row=[];
+  for(let f=0;f<4;f++)row.push(s*sh[f]+gauss(r));
+  for(let f=4;f<7;f++)row.push(row[f-4]+.7*gauss(r));
+  for(let f=7;f<N;f++)row.push(gauss(r));
+  X.push(row);y.push(c)}
+ const idx=[...Array(M).keys()];
+ for(let i=M-1;i>0;i--){const j=Math.floor(r()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}
+ const tr=idx.slice(0,NTR),te=idx.slice(NTR);
+ const mu=[],sd=[];
+ for(let f=0;f<N;f++){const v=tr.map(i=>X[i][f]),m=v.reduce((a,b)=>a+b)/NTR;mu.push(m);sd.push(Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/NTR)||1)}
+ const Z=i=>X[i].map((v,f)=>(v-mu[f])/sd[f]),Ztr=tr.map(Z),Zte=te.map(Z);
+ ytr=tr.map(i=>y[i]);yte=te.map(i=>y[i]);
+ D=[];DT=[];
+ for(let f=0;f<N;f++){const a=new Float32Array(NTR*NTR),b=new Float32Array(NTE*NTR);
+  for(let i=0;i<NTR;i++)for(let j=0;j<NTR;j++)a[i*NTR+j]=(Ztr[i][f]-Ztr[j][f])**2;
+  for(let i=0;i<NTE;i++)for(let j=0;j<NTR;j++)b[i*NTR+j]=(Zte[i][f]-Ztr[j][f])**2;
+  D.push(a);DT.push(b)}
+ cache=new Map();base=testAcc(Array(N).fill(1));
+}
+function vote(arr,n,sel,i,self){const kd=[1e9,1e9,1e9,1e9,1e9],kl=[0,0,0,0,0];
+ for(let j=0;j<NTR;j++){if(self&&j===i)continue;let d=0;for(const f of sel)d+=arr[f][i*NTR+j];
+  if(d<kd[4]){let p=4;while(p>0&&kd[p-1]>d){kd[p]=kd[p-1];kl[p]=kl[p-1];p--}kd[p]=d;kl[p]=ytr[j]}}
+ return kl[0]+kl[1]+kl[2]+kl[3]+kl[4]>=3?1:0}
+const sel=m=>{const s=[];m.forEach((b,f)=>b&&s.push(f));return s};
+function loo(m){const s=sel(m);if(!s.length)return 0;let ok=0;for(let i=0;i<NTR;i++)if(vote(D,NTR,s,i,true)===ytr[i])ok++;return ok/NTR}
+function testAcc(m){const s=sel(m);if(!s.length)return 0;let ok=0;for(let i=0;i<NTE;i++)if(vote(DT,NTR,s,i,false)===yte[i])ok++;return ok/NTE}
+const lam=()=>+$('#lam').value;
+function fit(m){const k=m.join('')+'|'+lam();if(!cache.has(k))cache.set(k,sel(m).length?loo(m)-lam()*sel(m).length/N:-1);return cache.get(k)}
+function rmask(r){const m=Array.from({length:N},()=>r()<.5?1:0);if(!m.some(Boolean))m[Math.floor(r()*N)]=1;return m}
+function initGA(){stop();const seed=+$('#seed').value||1;G={r:rng(seed*7+1),pop:null,P:+$('#pop').value,T:+$('#gens').value};
+ G.pop=Array.from({length:G.P},()=>rmask(G.r));hist=[];cache=new Map();view=0;update()}
+function stepGA(){if(!G||hist.length>=G.T)return false;
+ const sc=G.pop.map(fit),ord=sc.map((s,i)=>i).sort((a,b)=>sc[b]-sc[a]);
+ hist.push({best:sc[ord[0]],mean:sc.reduce((a,b)=>a+b)/sc.length,mask:G.pop[ord[0]].slice(),snap:ord.map(i=>({m:G.pop[i].slice(),f:sc[i]}))});
+ if(hist.length<G.T){const r=G.r,tour=()=>{let b=-1;for(let t=0;t<3;t++){const c=Math.floor(r()*G.P);if(b<0||sc[c]>sc[b])b=c}return G.pop[b]};
+  const nx=ord.slice(0,2).map(i=>G.pop[i].slice());
+  while(nx.length<G.P){let a=tour().slice(),b=tour().slice();
+   if(r()<+$('#cx').value){const p=1+Math.floor(r()*(N-1));for(let k=p;k<N;k++){const t=a[k];a[k]=b[k];b[k]=t}}
+   for(const c of [a,b]){for(let k=0;k<N;k++)if(r()<+$('#mu').value)c[k]^=1;if(!c.some(Boolean))c[Math.floor(r()*N)]=1;if(nx.length<G.P)nx.push(c)}}
+  G.pop=nx}
+ if(!view||view>=hist.length-1)view=hist.length;update();const more=hist.length<G.T;if(!more)say(`Finished: the best subset keeps ${sel(hist[hist.length-1].mask).length} of 12 features (fitness ${hist[hist.length-1].best.toFixed(3)}).`);return more}
+function stop(){clearInterval(timer);timer=null;$('#run').textContent='Run'}
+const say=t=>$('#status').textContent=t,tick=()=>{if(!stepGA())stop()};
+function run(){if(timer){stop();say('Paused.');return}if(!G||hist.length>=G.T)initGA();$('#run').textContent='Pause';say('Evolving…');
+ timer=setInterval(tick,+$('#spd').value)}
+function genes(el,mask,click){el.innerHTML='';mask.forEach((b,f)=>{const d=document.createElement(click?'button':'div');d.className='gene'+(b?' on':'')+(click?' t':'');d.textContent='F'+(f+1);
+ d.title='F'+(f+1)+': '+{i:'informative',r:'redundant copy',n:'noise'}[TY[f]];if(b)d.style.background=cv(VAR[TY[f]]);
+ if(click){d.setAttribute('aria-pressed',!!b);d.onclick=()=>click(f)}el.appendChild(d)})}
+function canvas(c){const w=c.clientWidth,h=+c.getAttribute('height'),d=devicePixelRatio||1;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.clearRect(0,0,w,h);return[x,w,h]}
+function heat(){const[x,w,h]=canvas($('#heat'));const e=hist[view-1];x.font='11px system-ui';x.textAlign='center';
+ const L=40,top=16,cw=(w-L)/N;for(let f=0;f<N;f++){x.fillStyle=cv('--mut');x.fillText('F'+(f+1),L+cw*(f+.5),11)}
+ if(!e){x.fillStyle=cv('--mut');x.textAlign='left';x.fillText('Press Run to create the first population.',L,h/2);return}
+ const rh=Math.min(14,(h-top)/e.snap.length);
+ e.snap.forEach((s,i)=>{const y=top+i*rh;x.textAlign='right';x.fillStyle=cv('--mut');if(i%5===0||rh>9)x.fillText(s.f.toFixed(2),L-6,y+rh*.75);
+  s.m.forEach((b,f)=>{x.fillStyle=b?cv(VAR[TY[f]]):cv('--off');x.fillRect(L+f*cw+1,y+1,cw-2,rh-2)})});
+ x.strokeStyle=cv('--ink');x.lineWidth=2;x.strokeRect(L,top,w-L,rh)}
+function chart(){const[x,w,h]=canvas($('#chart'));const P={l:40,r:10,t:10,b:24};
+ x.font='11px system-ui';x.fillStyle=cv('--mut');x.strokeStyle=cv('--line');
+ if(!hist.length){x.fillText('No generations yet.',P.l,h/2);return}
+ const all=hist.flatMap(e=>[e.best,e.mean]);let lo=Math.min(...all),hi=Math.max(...all);if(hi-lo<.02){lo-=.01;hi+=.01}
+ const X=i=>P.l+(w-P.l-P.r)*(G.T<2?0:i/(G.T-1)),Y=v=>h-P.b-(h-P.t-P.b)*(v-lo)/(hi-lo);
+ for(let k=0;k<=4;k++){const v=lo+(hi-lo)*k/4,y=Y(v);x.beginPath();x.moveTo(P.l,y);x.lineTo(w-P.r,y);x.stroke();x.textAlign='right';x.fillText(v.toFixed(2),P.l-5,y+4)}
+ x.textAlign='center';x.fillText('generation 1 → '+G.T,w/2,h-5);
+ for(const[k,c]of[['mean','--vio'],['best','--rose']]){x.strokeStyle=cv(c);x.lineWidth=2.5;x.beginPath();hist.forEach((e,i)=>i?x.lineTo(X(i),Y(e[k])):x.moveTo(X(i),Y(e[k])));x.stroke()}
+ x.fillStyle=cv('--ink');x.beginPath();x.arc(X(view-1),Y(hist[view-1].best),5,0,7);x.fill()}
+function mineEval(){const v=loo(mine),t=testAcc(mine),k=sel(mine).length;
+ $('#myVal').textContent=k?(v*100).toFixed(1)+'%':'–';$('#myTest').textContent=k?(t*100).toFixed(1)+'%':'–';$('#myFit').textContent=k?(v-lam()*k/N).toFixed(3):'–';
+ genes($('#myGenes'),mine,f=>{mine[f]^=1;mineEval()})}
+function update(){const e=hist[view-1],last=hist[hist.length-1];
+ $('#sGen').textContent=hist.length+' / '+(G?G.T:$('#gens').value);$('#sEv').textContent=cache.size;
+ $('#sFit').textContent=last?last.best.toFixed(3):'–';$('#sK').textContent=(last?sel(last.mask).length:'–')+' / 12';
+ const sc=$('#scrub');sc.disabled=!hist.length;sc.max=Math.max(1,hist.length);sc.value=view||1;$('#scrubO').textContent=hist.length?'gen '+view:'';
+ genes($('#bestGenes'),e?e.mask:Array(N).fill(0));heat();chart();
+ if(last){const s=sel(last.mask),c={i:0,r:0,n:0};s.forEach(f=>c[TY[f]]++);const tA=testAcc(last.mask);
+  $('#insight').textContent=`Latest best keeps ${s.length} of 12 features: ${c.i} informative, ${c.r} redundant, ${c.n} noise.`+(c.n===0?' No pure-noise feature survived.':'');
+  $('#gA').textContent=(tA*100).toFixed(1)+'%';$('#gAb').style.width=tA*100+'%';$('#gLbl').textContent='GA-selected subset ('+s.length+' features)';
+  $('#red').textContent=Math.round((1-s.length/N)*100)+'%';$('#redb').style.width=(1-s.length/N)*100+'%'}
+ else{['#gA','#red'].forEach(i=>$(i).textContent='–');$('#gAb').style.width=0;$('#redb').style.width=0;$('#insight').textContent='Run the algorithm to see which features survive.'}
+ $('#bA').textContent=(base*100).toFixed(1)+'%';$('#bAb').style.width=base*100+'%';mineEval()}
+document.querySelectorAll('.ctl input[type=range]').forEach(i=>{const o=i.nextElementSibling,f=()=>o.textContent=i.id==='mu'?(+i.value*100).toFixed(1)+'%':i.id==='cx'?(+i.value).toFixed(2):i.value;i.addEventListener('input',f);f()});
+$('#run').onclick=run;$('#step').onclick=()=>{stop();if(!G||hist.length>=G.T)initGA();stepGA()};
+$('#reset').onclick=()=>{makeData(+$('#seed').value||1);initGA();say('Reset. Press Run to evolve.')};
+$('#rnd').onclick=()=>{$('#seed').value=1+Math.floor(Math.random()*9998);$('#reset').onclick()};
+$('#seed').onchange=$('#reset').onclick;
+['pop','gens','cx','mu','lam'].forEach(i=>$('#'+i).addEventListener('change',()=>{
+ if(timer)return say(i==='pop'||i==='gens'?'Population and generations apply after Reset.':'Applied live from the next generation.');
+ initGA();say('Settings updated. Press Run to evolve again.')}));
+$('#lam').addEventListener('input',()=>{cache=new Map();mineEval()});
+$('#spd').addEventListener('input',()=>{if(timer){clearInterval(timer);timer=setInterval(tick,+$('#spd').value)}});
+$('#heat').onclick=e=>{const h=hist[view-1];if(!h)return;const r=e.currentTarget.getBoundingClientRect(),n=h.snap.length,rh=Math.min(14,284/n),i=Math.floor((e.clientY-r.top-16)/rh);
+ if(i>=0&&i<n){mine=h.snap[i].m.slice();mineEval();say('Loaded chromosome '+(i+1)+' of generation '+view+' into “Try your own subset”.')}};
+$('#go').onclick=()=>{$('#lab').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});setTimeout(()=>{if(!timer)run()},700)};
+$('#scrub').oninput=e=>{view=+e.target.value;update()};
+$('#myAll').onclick=()=>{mine=Array(N).fill(1);mineEval()};$('#myNone').onclick=()=>{mine=Array(N).fill(0);mineEval()};
+$('#myBest').onclick=()=>{if(hist.length){mine=hist[hist.length-1].mask.slice();mineEval()}};
+addEventListener('resize',()=>{heat();chart()});
+makeData(42);initGA();
+(function(){const c=$('#dna'),x=c.getContext('2d'),reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;let t=0,W,H;
+ function size(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;c.width=W*d;c.height=H*d;x.setTransform(d,0,0,d,0,0);if(reduce)draw()}
+ function helix(cx,A,ph,al,sc){let n=0;for(let y=-20;y<H+20;y+=11*sc,n++){const p=y*.011/sc+t+ph,s=Math.sin(p)*A,z=Math.cos(p);
+  if(n%3===0){x.globalAlpha=al*.45;x.strokeStyle=n%2?'#F5A524':'#7CF0DC';x.lineWidth=2*sc;x.beginPath();x.moveTo(cx+s,y);x.lineTo(cx-s,y);x.stroke()}
+  for(const[sg,col]of[[1,'#10E0C4'],[-1,'#FF5FA8']]){const zz=z*sg,r=(3.2+2.6*(zz+1)/2)*sc;x.globalAlpha=al*(.45+.55*(zz+1)/2);x.fillStyle=col;x.beginPath();x.arc(cx+s*sg,y,r,0,7);x.fill()}}}
+ function draw(){x.clearRect(0,0,W,H);helix(W>700?W*.84:W*.9,W>700?Math.min(95,W*.09):36,0,.85,1.15);helix(W>700?W*.09:-30,W>700?55:30,2.2,.4,.8);x.globalAlpha=1}
+ function loop(){t+=.014;draw();requestAnimationFrame(loop)}
+ addEventListener('resize',size);size();if(!reduce)loop()})();
+</script></body></html>
